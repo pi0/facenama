@@ -66,7 +66,7 @@ function q($title, $q)
                 ORDER BY likeAndComment DESC 
     ");
 
-    q('SPAM Scores', "
+    q('SPAM Scores / Post ', "
               SELECT *,100*a.interactions/a.all_interactions spam_ratio FROM(
                 SELECT users.uid,name,p.pid,p.message,
                 count(DISTINCT(likes.lid))+count(DISTINCT(comments.cid)) AS interactions,
@@ -82,6 +82,25 @@ function q($title, $q)
                 LEFT JOIN comments ON p.pid = comments.pid AND comments.uid=users.uid
                 GROUP BY (users.uid+p.pid)
               ) AS a
+    ");
+
+    q('SPAM Scores / User ', "
+              
+              SELECT a.uid,a.name,AVG(100*a.interactions/a.all_interactions) spammer FROM(
+                SELECT users.uid,name,p.pid,p.message,
+                count(DISTINCT(likes.lid))+count(DISTINCT(comments.cid)) AS interactions,
+                (SELECT count(DISTINCT(likes.lid))+count(DISTINCT(comments.cid)) 
+                            FROM posts AS p2
+                            LEFT JOIN likes ON p2.pid = likes.pid
+                            LEFT JOIN comments  ON p2.pid = comments.pid
+                            WHERE p2.pid=p.pid
+                ) AS all_interactions
+                FROM users
+                JOIN posts AS p
+                LEFT JOIN likes ON p.pid = likes.pid AND likes.uid=users.uid
+                LEFT JOIN comments ON p.pid = comments.pid AND comments.uid=users.uid
+                GROUP BY (users.uid+p.pid)
+              ) AS a GROUP BY a.uid
     ");
 
     q('Search by tag="tagee" with more than 3 likes', "
